@@ -3,19 +3,16 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
-	server2 "server-app/server"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
+	server2 "server-app/server"
 	"syscall"
 )
 
 func init() {
 	if err := godotenv.Load(); err != nil {
 		panic(fmt.Errorf("can't load env: %v", err))
-	}
-	if err := os.MkdirAll(os.Getenv("BAN_EVIDENCE_PATH"), 0775); err != nil {
-		panic(fmt.Errorf("can't create cdn and ban evidences directory: %v", err))
 	}
 
 	logrus.SetFormatter(&logrus.TextFormatter{

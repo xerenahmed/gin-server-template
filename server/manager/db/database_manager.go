@@ -33,14 +33,13 @@ func (m *Manager) Load() error {
 
 	for i := 0; i < 5; i++ {
 		m.client, err = createClient()
-		if err != nil {
-			if i == 2 {
-				return err
-			}
-		} else {
+		if err == nil {
 			break
 		}
 		time.Sleep(time.Second * 3)
+	}
+	if err != nil {
+		return err
 	}
 
 	m.general = &GeneralDataBase{db: m.client.Database("general")}

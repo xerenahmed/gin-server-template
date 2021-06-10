@@ -9,8 +9,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/joho/godotenv v1.3.0
 	github.com/pelletier/go-toml v1.9.0
-	github.com/piquette/finance-go v1.0.0 // indirect
-	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	go.mongodb.org/mongo-driver v1.5.2
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 )
