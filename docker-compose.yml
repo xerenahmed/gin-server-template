@@ -1,0 +1,48 @@
+version: "3.4"
+
+services:
+  admin:
+    build: .
+    restart: always
+    environment:
+      - "GIN_MODE=${MODE}"
+    expose:
+      - 5000
+    depends_on:
+      - mongo-setup
+    networks:
+      - layer_1
+      - default
+
+  redis:
+    image: redis
+
+  mongo:
+    image: mongo
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
+    command: --logpath=/dev/null --quiet
+
+  mongo-setup:
+    image: mongo
+    depends_on:
+      - mongo
+      - mongodb1
+      - mongodb2
+    volumes:
+      - ./docker/deployment_scripts:/deployment_scripts
+    entrypoint:
+      - /deployment_scripts/initiate_replica.sh
+
+  mongodb1:
+    image: mongo
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
+    command: --logpath=/dev/null --quiet
+
+  mongodb2:
+    image: mongo
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
+    command: --logpath=/dev/null --quiet
+
+networks:
+  layer_1:
+    name: layer_1
