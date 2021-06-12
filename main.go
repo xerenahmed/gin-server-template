@@ -29,7 +29,7 @@ func init() {
 func main() {
 	server, err := server2.NewServer()
 	if err != nil {
-		logrus.WithError(err).Fatal("Sunucu oluşturulamadı.")
+		logrus.WithError(err).Fatal("failed creating server.")
 	}
 
 	server.Load()
@@ -38,16 +38,18 @@ func main() {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, syscall.SIGKILL, syscall.SIGINT)
 
+	go func() {
+		select {
+		case sig := <-c:
+			logrus.WithError(err).WithField("signal", sig.String()).Fatal("close signal received, server closing..")
+			server.Close()
+			break
+		}
+	}()
+
 	select {
-	case <-c:
-		logrus.Info("Sinyal tarafından emredildi.")
-		break
-	case <-server.CloseRecv:
-		logrus.Info("Sunucu tarafından emredildi.")
+	case <-server.CloseReceiver:
+		logrus.Info("server closed.")
 		break
 	}
-
-	logrus.Info("Sunucu kapatılıyor.")
-	server.Shutdown()
-	logrus.Info("Sunucu kapandı.")
 }

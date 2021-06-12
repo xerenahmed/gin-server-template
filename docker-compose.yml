@@ -1,13 +1,11 @@
 version: "3.4"
 
 services:
-  admin:
+  server-app:
     build: .
     restart: always
     environment:
-      - "GIN_MODE=${MODE}"
-    expose:
-      - 5000
+      - "GIN_MODE=${GIN_MODE}"
     depends_on:
       - mongo-setup
     networks:
@@ -45,4 +43,5 @@ services:
 
 networks:
   layer_1:
+    external: true
     name: layer_1

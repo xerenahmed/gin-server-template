@@ -20,6 +20,10 @@ func NewCacheManager() *Manager {
 	return &Manager{redis: rdb}
 }
 
+func (m *Manager) Client() *redis.Client {
+	return m.redis
+}
+
 func (m *Manager) Ping(ctx context.Context) (string, error) {
 	return m.redis.Ping(ctx).Result()
 }

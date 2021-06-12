@@ -6,4 +6,6 @@ COPY build/server .
 COPY .env .
 COPY settings.toml .
 
-CMD ["/opt/app/server"]
+STOPSIGNAL SIGINT
+
+ENTRYPOINT ["/opt/app/server"]

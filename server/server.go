@@ -3,11 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	cache2 "server-app/server/manager/cache"
 	db2 "server-app/server/manager/db"
 	router2 "server-app/server/manager/router"
 	settings2 "server-app/server/settings"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -17,7 +17,7 @@ type Server struct {
 	router   *router2.Manager
 	settings *settings2.Settings
 
-	CloseRecv chan struct{}
+	CloseReceiver chan struct{}
 }
 
 func NewServer() (*Server, error) {
@@ -28,7 +28,7 @@ func NewServer() (*Server, error) {
 
 	settings, err = settings2.Load()
 	if err != nil {
-		return nil, fmt.Errorf("ayarlar yüklenemedi: %v", err)
+		return nil, fmt.Errorf("failed loading settings: %v", err)
 	}
 
 	db := db2.NewDatabaseManager()
@@ -39,57 +39,59 @@ func NewServer() (*Server, error) {
 		cache:     cache,
 		settings:  settings,
 		router:    router2.NewRouterManager(db, cache, settings),
-		CloseRecv: make(chan struct{}, 1),
+		CloseReceiver: make(chan struct{}, 1),
 	}, nil
 }
 
 func (s *Server) Load() {
 	var err error
 
-	logrus.Info("Veritabanı yükleniyor.")
-	err = s.db.Load()
-	if err != nil {
-		logrus.WithError(err).Fatal("Veritabanı yüklenemedi.")
-	}
-
 	go func() {
-		logrus.Info("Cache servisine bağlanılıyor.")
+		logrus.Info("connecting to redis")
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 2)
 		defer cancel()
-		_, err = s.cache.Ping(ctx)
+
+		_, err := s.cache.Ping(ctx)
 		if err != nil {
-			logrus.WithError(err).Warning("Cache servisi ile bağlantı kurulamadı.")
+			logrus.WithError(err).Warning("failed ping redis")
 		}
 	}()
 
-	logrus.Info("Yönlendiriciler başlatılıyor.")
-	err = s.router.Load()
+	logrus.Info("connecting to mongodb")
+	err = s.db.Load()
 	if err != nil {
-		logrus.WithError(err).Fatal("Yönlendiriciler başlatılamadı.")
+		logrus.WithError(err).Fatal("failed load mongodb.")
 	}
 
-	logrus.Info("Sunucu hazır!")
+	logrus.Info("router handlers loading")
+	err = s.router.Load()
+	if err != nil {
+		logrus.WithError(err).Fatal("failed loading router handlers")
+	}
+
+	logrus.Info("server ready")
 }
 
 func (s *Server) Run() {
-	errorChan := make(chan error, 1)
-	go s.router.Run(errorChan)
+	errReceiver := make(chan error, 1)
+	go s.router.Run(errReceiver)
 
 	select {
-	case err := <-errorChan:
-		logrus.WithError(err).Error("Bir hata oluştu.")
+	case err := <-errReceiver:
+		logrus.WithError(err).Error("an error occurred")
 		s.Close()
 	}
 }
 
 func (s *Server) Close() {
-	close(s.CloseRecv)
+	s.shutdown()
+	close(s.CloseReceiver)
 }
 
-func (s *Server) Shutdown() {
+func (s *Server) shutdown() {
 	err := s.router.Shutdown()
 	if err != nil {
-		logrus.WithError(err).Error("Yönlendiriciler kapatılırken bir hata oluştu.")
+		logrus.WithError(err).Error("failed stopping router handlers")
 	}
 }
 

@@ -44,9 +44,9 @@ func (m *Manager) Load() error {
 	return nil
 }
 
-func (m *Manager) Run(errorChan chan error) {
+func (m *Manager) Run(errReceiver chan error) {
 	if err := m.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		errorChan <- err
+		errReceiver <- err
 	}
 }
 

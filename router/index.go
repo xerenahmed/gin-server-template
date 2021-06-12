@@ -6,5 +6,5 @@ import (
 )
 
 func Index(c *gin.Context) {
-	c.String(http.StatusOK, "RedMC Network")
+	c.String(http.StatusOK, "go-server-template")
 }
