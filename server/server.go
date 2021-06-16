@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	cache2 "server-app/server/manager/cache"
 	db2 "server-app/server/manager/db"
 	router2 "server-app/server/manager/router"
@@ -44,7 +45,14 @@ func NewServer() (*Server, error) {
 }
 
 func (s *Server) Load() {
-	var err error
+	var errs errgroup.Group
+
+	errs.Go(s.db.Load)
+	errs.Go(s.router.Load)
+
+	if err := errs.Wait(); err != nil {
+		logrus.WithError(err).Fatal("server start was failed")
+	}
 
 	go func() {
 		logrus.Info("connecting to redis")
@@ -57,19 +65,7 @@ func (s *Server) Load() {
 		}
 	}()
 
-	logrus.Info("connecting to mongodb")
-	err = s.db.Load()
-	if err != nil {
-		logrus.WithError(err).Fatal("failed load mongodb.")
-	}
-
-	logrus.Info("router handlers loading")
-	err = s.router.Load()
-	if err != nil {
-		logrus.WithError(err).Fatal("failed loading router handlers")
-	}
-
-	logrus.Info("server ready")
+	logrus.Info("server is ready")
 }
 
 func (s *Server) Run() {
